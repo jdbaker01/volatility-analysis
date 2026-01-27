@@ -22,6 +22,12 @@ export const mockVolatilityData = {
       p99: 0.3800,
     },
   },
+  returns: {
+    daily: 0.0125,
+    week: 0.0350,
+    month: -0.0215,
+    ytd: 0.0845,
+  },
   history: [
     { date: '2024-01-15', vol_30d: 0.1450, vol_90d: 0.1320 },
     { date: '2024-01-16', vol_30d: 0.1480, vol_90d: 0.1340 },
@@ -52,4 +58,24 @@ export const mockNullPriceData = {
   daily_open: null,
   daily_high: null,
   daily_low: null,
+}
+
+export const mockNullReturnsData = {
+  ...mockVolatilityData,
+  returns: {
+    daily: null,
+    week: null,
+    month: null,
+    ytd: null,
+  },
+}
+
+export const mockMixedReturnsData = {
+  ...mockVolatilityData,
+  returns: {
+    daily: 0.0050,
+    week: -0.0125,
+    month: null,
+    ytd: 0.0,
+  },
 }

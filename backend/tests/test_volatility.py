@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 import sys
 sys.path.insert(0, '..')
 
-from volatility import calculate_volatility, TRADING_DAYS_PER_YEAR
+from volatility import calculate_volatility, calculate_returns, TRADING_DAYS_PER_YEAR
 
 
 def create_mock_df(days=300):
@@ -45,7 +45,7 @@ class TestCalculateVolatility:
         expected_keys = [
             'ticker', 'current_price', 'daily_open', 'daily_high', 'daily_low',
             'vol_30d', 'vol_90d', 'vol_30d_percentile', 'vol_90d_percentile',
-            'vol_30d_bucket', 'vol_90d_bucket', 'percentile_thresholds', 'history'
+            'vol_30d_bucket', 'vol_90d_bucket', 'percentile_thresholds', 'returns', 'history'
         ]
         for key in expected_keys:
             assert key in result
@@ -237,3 +237,159 @@ class TestGetBucketFunction:
         valid_buckets = ['<p50', 'p50-p90', 'p90-p99', '>p99']
         assert result['vol_30d_bucket'] in valid_buckets
         assert result['vol_90d_bucket'] in valid_buckets
+
+
+class TestCalculateReturns:
+    """Test the calculate_returns function."""
+
+    def test_returns_structure(self):
+        """Test that calculate_returns returns expected keys."""
+        df = create_mock_df(days=300)
+        result = calculate_returns(df)
+
+        assert 'daily' in result
+        assert 'week' in result
+        assert 'month' in result
+        assert 'ytd' in result
+
+    def test_daily_return_calculation(self):
+        """Test daily return is calculated correctly."""
+        dates = pd.date_range(end=datetime.now(), periods=10, freq='D')
+        prices = [100, 102, 104, 103, 105, 106, 107, 108, 109, 110]
+        df = pd.DataFrame({
+            'adj_close': prices
+        }, index=dates)
+
+        result = calculate_returns(df)
+
+        # Daily return: (110 - 109) / 109 = 0.009174...
+        expected_daily = (110 - 109) / 109
+        assert abs(result['daily'] - expected_daily) < 0.0001
+
+    def test_week_return_calculation(self):
+        """Test weekly return is calculated correctly."""
+        dates = pd.date_range(end=datetime.now(), periods=10, freq='D')
+        prices = [100, 102, 104, 103, 105, 106, 107, 108, 109, 110]
+        df = pd.DataFrame({
+            'adj_close': prices
+        }, index=dates)
+
+        result = calculate_returns(df)
+
+        # Week return: (110 - 105) / 105 = 0.047619...
+        expected_week = (110 - 105) / 105
+        assert abs(result['week'] - expected_week) < 0.0001
+
+    def test_month_return_calculation(self):
+        """Test monthly return is calculated correctly."""
+        dates = pd.date_range(end=datetime.now(), periods=30, freq='D')
+        prices = list(range(100, 130))
+        df = pd.DataFrame({
+            'adj_close': prices
+        }, index=dates)
+
+        result = calculate_returns(df)
+
+        # Month return (21 trading days): (129 - 108) / 108
+        expected_month = (129 - 108) / 108
+        assert abs(result['month'] - expected_month) < 0.0001
+
+    def test_ytd_return_calculation(self):
+        """Test YTD return is calculated correctly."""
+        current_year = datetime.now().year
+        dates = pd.date_range(start=f'{current_year}-01-02', periods=50, freq='D')
+        prices = [100 + i for i in range(50)]
+        df = pd.DataFrame({
+            'adj_close': prices
+        }, index=dates)
+
+        result = calculate_returns(df)
+
+        # YTD return: (149 - 100) / 100 = 0.49
+        expected_ytd = (149 - 100) / 100
+        assert abs(result['ytd'] - expected_ytd) < 0.0001
+
+    def test_insufficient_data_for_daily(self):
+        """Test that daily return is None with only 1 data point."""
+        dates = pd.date_range(end=datetime.now(), periods=1, freq='D')
+        df = pd.DataFrame({
+            'adj_close': [100]
+        }, index=dates)
+
+        result = calculate_returns(df)
+
+        assert result['daily'] is None
+
+    def test_insufficient_data_for_week(self):
+        """Test that week return is None with less than 6 data points."""
+        dates = pd.date_range(end=datetime.now(), periods=5, freq='D')
+        df = pd.DataFrame({
+            'adj_close': [100, 101, 102, 103, 104]
+        }, index=dates)
+
+        result = calculate_returns(df)
+
+        assert result['week'] is None
+        assert result['daily'] is not None
+
+    def test_insufficient_data_for_month(self):
+        """Test that month return is None with less than 22 data points."""
+        dates = pd.date_range(end=datetime.now(), periods=20, freq='D')
+        df = pd.DataFrame({
+            'adj_close': list(range(100, 120))
+        }, index=dates)
+
+        result = calculate_returns(df)
+
+        assert result['month'] is None
+        assert result['week'] is not None
+
+    def test_no_ytd_data(self):
+        """Test YTD is None when no data from current year."""
+        # Create data from previous year only
+        dates = pd.date_range(start='2020-01-01', periods=100, freq='D')
+        df = pd.DataFrame({
+            'adj_close': list(range(100, 200))
+        }, index=dates)
+
+        result = calculate_returns(df)
+
+        assert result['ytd'] is None
+
+    def test_empty_dataframe(self):
+        """Test that empty DataFrame returns all None."""
+        df = pd.DataFrame({'adj_close': []})
+        df.index = pd.DatetimeIndex([])
+
+        result = calculate_returns(df)
+
+        assert result['daily'] is None
+        assert result['week'] is None
+        assert result['month'] is None
+        assert result['ytd'] is None
+
+    def test_returns_are_rounded(self):
+        """Test that returns are rounded to 6 decimal places."""
+        df = create_mock_df(days=300)
+        result = calculate_returns(df)
+
+        for key in ['daily', 'week', 'month', 'ytd']:
+            if result[key] is not None:
+                # Check decimal places
+                str_val = str(result[key])
+                if '.' in str_val:
+                    decimals = len(str_val.split('.')[1])
+                    assert decimals <= 6
+
+    @patch('volatility.fetch_and_cache')
+    def test_returns_in_calculate_volatility(self, mock_fetch):
+        """Test that returns are included in calculate_volatility output."""
+        mock_fetch.return_value = create_mock_df()
+
+        result = calculate_volatility('AAPL')
+
+        assert 'returns' in result
+        assert 'daily' in result['returns']
+        assert 'week' in result['returns']
+        assert 'month' in result['returns']
+        assert 'ytd' in result['returns']
