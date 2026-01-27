@@ -70,6 +70,36 @@ export default function VolatilityTable({ data }) {
         </div>
       </div>
 
+      {/* Returns */}
+      <div className="grid grid-cols-4 divide-x divide-[#1f1f1f] border-b border-[#1f1f1f]">
+        {[
+          { key: 'daily', label: 'DAILY' },
+          { key: 'week', label: '1 WEEK' },
+          { key: 'month', label: '1 MONTH' },
+          { key: 'ytd', label: 'YTD' },
+        ].map(({ key, label }) => {
+          const value = data.returns?.[key]
+          const formatted = value === null || value === undefined
+            ? '—'
+            : `${value >= 0 ? '+' : ''}${(value * 100).toFixed(2)}%`
+          const color = value === null || value === undefined
+            ? 'text-[#525252]'
+            : value > 0
+              ? 'text-[#22c55e]'
+              : value < 0
+                ? 'text-[#ef4444]'
+                : 'text-[#a3a3a3]'
+          return (
+            <div key={key} className="px-6 py-4 text-center">
+              <div className="text-[10px] text-[#525252] tracking-wider mb-2">{label}</div>
+              <div className={`text-lg font-light tabular-nums ${color}`}>
+                {formatted}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
       {/* Volatility Grid */}
       <div className="grid grid-cols-2 divide-x divide-[#1f1f1f]">
         {/* 30-Day */}

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import VolatilityTable from '../components/VolatilityTable'
-import { mockVolatilityData, mockHighVolData, mockMediumVolData, mockLowVolData, mockNullPriceData } from './mockData'
+import { mockVolatilityData, mockHighVolData, mockMediumVolData, mockLowVolData, mockNullPriceData, mockNullReturnsData, mockMixedReturnsData } from './mockData'
 
 describe('VolatilityTable', () => {
   it('renders ticker symbol', () => {
@@ -184,5 +184,51 @@ describe('VolatilityTable', () => {
     // Should render without error, defaulting to 50% position
     const priceIndicator = container.querySelector('.w-2.h-2.bg-white.rounded-full')
     expect(priceIndicator).toHaveStyle({ left: '50%' })
+  })
+
+  // Returns section tests
+  it('renders returns section with all period labels', () => {
+    render(<VolatilityTable data={mockVolatilityData} />)
+    expect(screen.getByText('DAILY')).toBeInTheDocument()
+    expect(screen.getByText('1 WEEK')).toBeInTheDocument()
+    expect(screen.getByText('1 MONTH')).toBeInTheDocument()
+    expect(screen.getByText('YTD')).toBeInTheDocument()
+  })
+
+  it('renders positive returns with plus sign and green color', () => {
+    render(<VolatilityTable data={mockVolatilityData} />)
+    // daily: 0.0125 = +1.25%
+    expect(screen.getByText('+1.25%')).toBeInTheDocument()
+    expect(screen.getByText('+1.25%')).toHaveClass('text-[#22c55e]')
+  })
+
+  it('renders negative returns with red color', () => {
+    render(<VolatilityTable data={mockVolatilityData} />)
+    // month: -0.0215 = -2.15%
+    expect(screen.getByText('-2.15%')).toBeInTheDocument()
+    expect(screen.getByText('-2.15%')).toHaveClass('text-[#ef4444]')
+  })
+
+  it('renders null returns with em dash and gray color', () => {
+    render(<VolatilityTable data={mockNullReturnsData} />)
+    // All returns are null, plus price nulls = multiple em dashes
+    const emDashes = screen.getAllByText('—')
+    expect(emDashes.length).toBeGreaterThanOrEqual(4)
+  })
+
+  it('renders zero return with neutral color', () => {
+    render(<VolatilityTable data={mockMixedReturnsData} />)
+    // ytd: 0.0 = +0.00%
+    expect(screen.getByText('+0.00%')).toBeInTheDocument()
+    expect(screen.getByText('+0.00%')).toHaveClass('text-[#a3a3a3]')
+  })
+
+  it('handles missing returns object gracefully', () => {
+    const dataWithoutReturns = { ...mockVolatilityData }
+    delete dataWithoutReturns.returns
+    render(<VolatilityTable data={dataWithoutReturns} />)
+    // Should render em dashes for all returns
+    const emDashes = screen.getAllByText('—')
+    expect(emDashes.length).toBeGreaterThanOrEqual(4)
   })
 })
