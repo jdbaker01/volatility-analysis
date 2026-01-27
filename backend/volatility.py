@@ -1,9 +1,56 @@
 import numpy as np
 import pandas as pd
 from typing import Dict, Any
+from datetime import datetime
 from cache import fetch_and_cache
 
 TRADING_DAYS_PER_YEAR = 252
+
+
+def calculate_returns(df: pd.DataFrame) -> Dict[str, float]:
+    """Calculate returns for various time periods."""
+    if len(df) < 2:
+        return {
+            "daily": None,
+            "week": None,
+            "month": None,
+            "ytd": None
+        }
+
+    current_price = df['adj_close'].iloc[-1]
+
+    # Daily return (1 day)
+    daily_return = None
+    if len(df) >= 2:
+        prev_price = df['adj_close'].iloc[-2]
+        daily_return = (current_price - prev_price) / prev_price
+
+    # Weekly return (5 trading days)
+    week_return = None
+    if len(df) >= 6:
+        week_ago_price = df['adj_close'].iloc[-6]
+        week_return = (current_price - week_ago_price) / week_ago_price
+
+    # Monthly return (~21 trading days)
+    month_return = None
+    if len(df) >= 22:
+        month_ago_price = df['adj_close'].iloc[-22]
+        month_return = (current_price - month_ago_price) / month_ago_price
+
+    # YTD return (from first trading day of current year)
+    ytd_return = None
+    current_year = datetime.now().year
+    ytd_df = df[df.index.year == current_year]
+    if len(ytd_df) >= 1:
+        year_start_price = ytd_df['adj_close'].iloc[0]
+        ytd_return = (current_price - year_start_price) / year_start_price
+
+    return {
+        "daily": round(daily_return, 6) if daily_return is not None else None,
+        "week": round(week_return, 6) if week_return is not None else None,
+        "month": round(month_return, 6) if month_return is not None else None,
+        "ytd": round(ytd_return, 6) if ytd_return is not None else None
+    }
 
 
 def calculate_volatility(ticker: str, lookback_years: int = 5) -> Dict[str, Any]:
@@ -61,6 +108,8 @@ def calculate_volatility(ticker: str, lookback_years: int = 5) -> Dict[str, Any]
             "vol_90d": round(row['vol_90d'], 4)
         })
 
+    returns = calculate_returns(df)
+
     return {
         "ticker": ticker.upper(),
         "current_price": round(current_price, 2),
@@ -85,5 +134,6 @@ def calculate_volatility(ticker: str, lookback_years: int = 5) -> Dict[str, Any]
                 "p99": round(vol_90d_p99, 4)
             }
         },
+        "returns": returns,
         "history": history
     }

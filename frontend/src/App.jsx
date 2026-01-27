@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import TickerInput from './components/TickerInput'
 import VolatilityTable from './components/VolatilityTable'
 import VolatilityChart from './components/VolatilityChart'
+import ReturnsTable from './components/ReturnsTable'
 
 const API_BASE = 'http://localhost:8000'
 const HISTORY_KEY = 'volatility_history'
@@ -135,6 +136,7 @@ export default function App() {
               <div className="space-y-6">
                 <VolatilityTable data={data} />
                 <VolatilityChart data={data} />
+                <ReturnsTable data={data} />
               </div>
             )}
 
