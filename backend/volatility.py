@@ -1,10 +1,37 @@
 import numpy as np
 import pandas as pd
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from datetime import datetime
 from cache import fetch_and_cache
 
 TRADING_DAYS_PER_YEAR = 252
+
+
+def calculate_rsi(df: pd.DataFrame, period: int = 14) -> Optional[float]:
+    """Calculate the Relative Strength Index using Wilder smoothing."""
+    if len(df) < period + 1:
+        return None
+
+    close = df['adj_close']
+    delta = close.diff()
+
+    gain = delta.where(delta > 0, 0.0)
+    loss = (-delta).where(delta < 0, 0.0)
+
+    avg_gain = gain.iloc[1:period + 1].mean()
+    avg_loss = loss.iloc[1:period + 1].mean()
+
+    for i in range(period + 1, len(delta)):
+        avg_gain = (avg_gain * (period - 1) + gain.iloc[i]) / period
+        avg_loss = (avg_loss * (period - 1) + loss.iloc[i]) / period
+
+    if avg_loss == 0:
+        return 100.0
+
+    rs = avg_gain / avg_loss
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+
+    return round(rsi, 2)
 
 
 def calculate_returns(df: pd.DataFrame) -> Dict[str, float]:
@@ -75,6 +102,16 @@ def calculate_volatility(ticker: str, lookback_years: int = 5) -> Dict[str, Any]
     daily_high = df['high'].iloc[-1]
     daily_low = df['low'].iloc[-1]
 
+    # Monthly range (last 21 trading days)
+    monthly_df = df.tail(21)
+    monthly_high = monthly_df['high'].max()
+    monthly_low = monthly_df['low'].min()
+
+    # Yearly range (last 252 trading days)
+    yearly_df = df.tail(252)
+    yearly_high = yearly_df['high'].max()
+    yearly_low = yearly_df['low'].min()
+
     vol_30d_p50 = df['vol_30d'].quantile(0.50)
     vol_30d_p90 = df['vol_30d'].quantile(0.90)
     vol_30d_p99 = df['vol_30d'].quantile(0.99)
@@ -109,6 +146,7 @@ def calculate_volatility(ticker: str, lookback_years: int = 5) -> Dict[str, Any]
         })
 
     returns = calculate_returns(df)
+    rsi_14d = calculate_rsi(df)
 
     return {
         "ticker": ticker.upper(),
@@ -116,6 +154,10 @@ def calculate_volatility(ticker: str, lookback_years: int = 5) -> Dict[str, Any]
         "daily_open": round(daily_open, 2),
         "daily_high": round(daily_high, 2),
         "daily_low": round(daily_low, 2),
+        "monthly_high": round(monthly_high, 2),
+        "monthly_low": round(monthly_low, 2),
+        "yearly_high": round(yearly_high, 2),
+        "yearly_low": round(yearly_low, 2),
         "vol_30d": round(current_vol_30d, 4),
         "vol_90d": round(current_vol_90d, 4),
         "vol_30d_percentile": round(vol_30d_percentile, 1),
@@ -135,5 +177,6 @@ def calculate_volatility(ticker: str, lookback_years: int = 5) -> Dict[str, Any]
             }
         },
         "returns": returns,
+        "rsi_14d": rsi_14d,
         "history": history
     }

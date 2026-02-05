@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 import sys
 sys.path.insert(0, '..')
 
-from volatility import calculate_volatility, calculate_returns, TRADING_DAYS_PER_YEAR
+from volatility import calculate_volatility, calculate_returns, calculate_rsi, TRADING_DAYS_PER_YEAR
 
 
 def create_mock_df(days=300):
@@ -45,7 +45,8 @@ class TestCalculateVolatility:
         expected_keys = [
             'ticker', 'current_price', 'daily_open', 'daily_high', 'daily_low',
             'vol_30d', 'vol_90d', 'vol_30d_percentile', 'vol_90d_percentile',
-            'vol_30d_bucket', 'vol_90d_bucket', 'percentile_thresholds', 'returns', 'history'
+            'vol_30d_bucket', 'vol_90d_bucket', 'percentile_thresholds', 'returns',
+            'rsi_14d', 'history'
         ]
         for key in expected_keys:
             assert key in result
@@ -393,3 +394,80 @@ class TestCalculateReturns:
         assert 'week' in result['returns']
         assert 'month' in result['returns']
         assert 'ytd' in result['returns']
+
+
+class TestCalculateRsi:
+    """Test the calculate_rsi function."""
+
+    def test_rsi_returns_value_in_valid_range(self):
+        """Test that RSI is between 0 and 100."""
+        df = create_mock_df(days=300)
+        result = calculate_rsi(df)
+
+        assert result is not None
+        assert 0 <= result <= 100
+
+    def test_rsi_is_rounded_to_2_decimals(self):
+        """Test that RSI is rounded to 2 decimal places."""
+        df = create_mock_df(days=300)
+        result = calculate_rsi(df)
+
+        str_val = str(result)
+        if '.' in str_val:
+            decimals = len(str_val.split('.')[1])
+            assert decimals <= 2
+
+    def test_rsi_insufficient_data(self):
+        """Test that RSI returns None with insufficient data."""
+        dates = pd.date_range(end=datetime.now(), periods=10, freq='D')
+        df = pd.DataFrame({
+            'adj_close': list(range(100, 110))
+        }, index=dates)
+
+        result = calculate_rsi(df)
+
+        assert result is None
+
+    def test_rsi_with_all_gains(self):
+        """Test RSI is 100 when all periods are gains (no losses)."""
+        dates = pd.date_range(end=datetime.now(), periods=20, freq='D')
+        prices = [100 + i for i in range(20)]
+        df = pd.DataFrame({
+            'adj_close': prices
+        }, index=dates)
+
+        result = calculate_rsi(df)
+
+        assert result == 100.0
+
+    def test_rsi_custom_period(self):
+        """Test RSI with a custom period."""
+        df = create_mock_df(days=300)
+        result = calculate_rsi(df, period=7)
+
+        assert result is not None
+        assert 0 <= result <= 100
+
+    def test_rsi_with_exact_minimum_data(self):
+        """Test RSI with exactly period+1 data points."""
+        dates = pd.date_range(end=datetime.now(), periods=15, freq='D')
+        prices = [100, 102, 101, 103, 104, 102, 105, 106, 104, 107, 108, 106, 109, 110, 108]
+        df = pd.DataFrame({
+            'adj_close': prices
+        }, index=dates)
+
+        result = calculate_rsi(df, period=14)
+
+        assert result is not None
+        assert 0 <= result <= 100
+
+    @patch('volatility.fetch_and_cache')
+    def test_rsi_in_calculate_volatility(self, mock_fetch):
+        """Test that rsi_14d is included in calculate_volatility output."""
+        mock_fetch.return_value = create_mock_df()
+
+        result = calculate_volatility('AAPL')
+
+        assert 'rsi_14d' in result
+        assert result['rsi_14d'] is not None
+        assert 0 <= result['rsi_14d'] <= 100

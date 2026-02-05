@@ -28,6 +28,7 @@ export const mockVolatilityData = {
     month: -0.0215,
     ytd: 0.0845,
   },
+  rsi_14d: 55.32,
   history: [
     { date: '2024-01-15', vol_30d: 0.1450, vol_90d: 0.1320 },
     { date: '2024-01-16', vol_30d: 0.1480, vol_90d: 0.1340 },
@@ -78,4 +79,19 @@ export const mockMixedReturnsData = {
     month: null,
     ytd: 0.0,
   },
+}
+
+export const mockOverboughtRsiData = {
+  ...mockVolatilityData,
+  rsi_14d: 82.50,
+}
+
+export const mockOversoldRsiData = {
+  ...mockVolatilityData,
+  rsi_14d: 22.10,
+}
+
+export const mockNullRsiData = {
+  ...mockVolatilityData,
+  rsi_14d: null,
 }

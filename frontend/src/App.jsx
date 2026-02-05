@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import TickerInput from './components/TickerInput'
 import VolatilityTable from './components/VolatilityTable'
 import VolatilityChart from './components/VolatilityChart'
-import ReturnsTable from './components/ReturnsTable'
 
 const API_BASE = 'http://localhost:8000'
 const HISTORY_KEY = 'volatility_history'
@@ -67,7 +66,7 @@ export default function App() {
         <div className="px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <h1 className="text-[15px] font-semibold tracking-tight text-white">
-              VOLATILITY TERMINAL
+              INVESTMENT ANALYSIS
             </h1>
             <div className="h-4 w-px bg-[#3d5a7f]" />
             <TickerInput onSubmit={fetchVolatility} loading={loading} />
@@ -136,7 +135,6 @@ export default function App() {
               <div className="space-y-6">
                 <VolatilityTable data={data} />
                 <VolatilityChart data={data} />
-                <ReturnsTable data={data} />
               </div>
             )}
 

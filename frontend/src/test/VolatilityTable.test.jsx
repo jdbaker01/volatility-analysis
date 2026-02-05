@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import VolatilityTable from '../components/VolatilityTable'
-import { mockVolatilityData, mockHighVolData, mockMediumVolData, mockLowVolData, mockNullPriceData, mockNullReturnsData, mockMixedReturnsData } from './mockData'
+import { mockVolatilityData, mockHighVolData, mockMediumVolData, mockLowVolData, mockNullPriceData, mockNullReturnsData, mockMixedReturnsData, mockOverboughtRsiData, mockOversoldRsiData, mockNullRsiData } from './mockData'
 
 describe('VolatilityTable', () => {
   it('renders ticker symbol', () => {
@@ -169,8 +169,8 @@ describe('VolatilityTable', () => {
   it('renders OHLC labels', () => {
     render(<VolatilityTable data={mockVolatilityData} />)
     expect(screen.getByText('O')).toBeInTheDocument()
-    expect(screen.getByText('H')).toBeInTheDocument()
-    expect(screen.getByText('L')).toBeInTheDocument()
+    expect(screen.getAllByText('H').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('L').length).toBeGreaterThan(0)
   })
 
   it('handles price position when high equals low (division by zero)', () => {
@@ -230,5 +230,47 @@ describe('VolatilityTable', () => {
     // Should render em dashes for all returns
     const emDashes = screen.getAllByText('—')
     expect(emDashes.length).toBeGreaterThanOrEqual(4)
+  })
+
+  // RSI section tests
+  it('renders RSI label', () => {
+    render(<VolatilityTable data={mockVolatilityData} />)
+    expect(screen.getByText('14-DAY RSI')).toBeInTheDocument()
+  })
+
+  it('renders RSI value for neutral RSI', () => {
+    render(<VolatilityTable data={mockVolatilityData} />)
+    expect(screen.getByText('55.32')).toBeInTheDocument()
+    expect(screen.getByText('NEUTRAL')).toBeInTheDocument()
+  })
+
+  it('renders RSI value with white color for neutral range', () => {
+    render(<VolatilityTable data={mockVolatilityData} />)
+    expect(screen.getByText('55.32')).toHaveClass('text-white')
+  })
+
+  it('renders overbought RSI with red color and label', () => {
+    render(<VolatilityTable data={mockOverboughtRsiData} />)
+    expect(screen.getByText('82.50')).toBeInTheDocument()
+    expect(screen.getByText('82.50')).toHaveClass('text-[#ef4444]')
+    expect(screen.getByText('OVERBOUGHT')).toBeInTheDocument()
+    expect(screen.getByText('OVERBOUGHT')).toHaveClass('text-[#ef4444]')
+  })
+
+  it('renders oversold RSI with green color and label', () => {
+    render(<VolatilityTable data={mockOversoldRsiData} />)
+    expect(screen.getByText('22.10')).toBeInTheDocument()
+    expect(screen.getByText('22.10')).toHaveClass('text-[#22c55e]')
+    expect(screen.getByText('OVERSOLD')).toBeInTheDocument()
+    expect(screen.getByText('OVERSOLD')).toHaveClass('text-[#22c55e]')
+  })
+
+  it('renders null RSI with em dash', () => {
+    render(<VolatilityTable data={mockNullRsiData} />)
+    expect(screen.getByText('14-DAY RSI')).toBeInTheDocument()
+    // Should not show NEUTRAL/OVERBOUGHT/OVERSOLD label
+    expect(screen.queryByText('NEUTRAL')).not.toBeInTheDocument()
+    expect(screen.queryByText('OVERBOUGHT')).not.toBeInTheDocument()
+    expect(screen.queryByText('OVERSOLD')).not.toBeInTheDocument()
   })
 })
