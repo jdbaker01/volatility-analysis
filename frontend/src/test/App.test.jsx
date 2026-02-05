@@ -16,7 +16,7 @@ describe('App', () => {
 
   it('renders header with title', () => {
     render(<App />)
-    expect(screen.getByText('VOLATILITY TERMINAL')).toBeInTheDocument()
+    expect(screen.getByText('INVESTMENT ANALYSIS')).toBeInTheDocument()
   })
 
   it('renders HISTORICAL ANALYSIS text', () => {

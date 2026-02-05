@@ -31,21 +31,49 @@ export default function VolatilityTable({ data }) {
             </div>
           </div>
 
-          {/* Daily Range */}
-          <div className="text-right">
-            <div className="text-[11px] text-[#525252] tracking-wider mb-2">DAILY RANGE</div>
-            <div className="flex items-center gap-4 text-[13px] tabular-nums">
-              <div>
-                <span className="text-[#525252]">O </span>
-                <span className="text-[#a3a3a3]">{formatPrice(data.daily_open)}</span>
+          {/* Range Data */}
+          <div className="text-right space-y-2">
+            <div>
+              <div className="text-[10px] text-[#525252] tracking-wider mb-1">DAILY RANGE</div>
+              <div className="flex items-center justify-end gap-4 text-[12px] tabular-nums">
+                <div>
+                  <span className="text-[#525252]">O </span>
+                  <span className="text-[#a3a3a3]">{formatPrice(data.daily_open)}</span>
+                </div>
+                <div>
+                  <span className="text-[#525252]">H </span>
+                  <span className="text-[#22c55e]">{formatPrice(data.daily_high)}</span>
+                </div>
+                <div>
+                  <span className="text-[#525252]">L </span>
+                  <span className="text-[#ef4444]">{formatPrice(data.daily_low)}</span>
+                </div>
               </div>
-              <div>
-                <span className="text-[#525252]">H </span>
-                <span className="text-[#22c55e]">{formatPrice(data.daily_high)}</span>
+            </div>
+            <div>
+              <div className="text-[10px] text-[#525252] tracking-wider mb-1">MONTHLY RANGE</div>
+              <div className="flex items-center justify-end gap-4 text-[12px] tabular-nums">
+                <div>
+                  <span className="text-[#525252]">H </span>
+                  <span className="text-[#22c55e]">{formatPrice(data.monthly_high)}</span>
+                </div>
+                <div>
+                  <span className="text-[#525252]">L </span>
+                  <span className="text-[#ef4444]">{formatPrice(data.monthly_low)}</span>
+                </div>
               </div>
-              <div>
-                <span className="text-[#525252]">L </span>
-                <span className="text-[#ef4444]">{formatPrice(data.daily_low)}</span>
+            </div>
+            <div>
+              <div className="text-[10px] text-[#525252] tracking-wider mb-1">YEARLY RANGE</div>
+              <div className="flex items-center justify-end gap-4 text-[12px] tabular-nums">
+                <div>
+                  <span className="text-[#525252]">H </span>
+                  <span className="text-[#22c55e]">{formatPrice(data.yearly_high)}</span>
+                </div>
+                <div>
+                  <span className="text-[#525252]">L </span>
+                  <span className="text-[#ef4444]">{formatPrice(data.yearly_low)}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -68,6 +96,7 @@ export default function VolatilityTable({ data }) {
             <span>{formatPrice(data.daily_high)}</span>
           </div>
         </div>
+
       </div>
 
       {/* Returns */}
@@ -98,6 +127,37 @@ export default function VolatilityTable({ data }) {
             </div>
           )
         })}
+      </div>
+
+      {/* RSI */}
+      <div className="px-6 py-4 border-b border-[#1f1f1f]">
+        <div className="flex items-center justify-between">
+          <div className="text-[11px] text-[#525252] tracking-wider">14-DAY RSI</div>
+          <div className="flex items-center gap-3">
+            <span className={`text-lg font-light tabular-nums ${
+              data.rsi_14d == null
+                ? 'text-[#525252]'
+                : data.rsi_14d > 70
+                  ? 'text-[#ef4444]'
+                  : data.rsi_14d < 30
+                    ? 'text-[#22c55e]'
+                    : 'text-white'
+            }`}>
+              {data.rsi_14d != null ? data.rsi_14d.toFixed(2) : '—'}
+            </span>
+            {data.rsi_14d != null && (
+              <span className={`text-[11px] tracking-wider ${
+                data.rsi_14d > 70
+                  ? 'text-[#ef4444]'
+                  : data.rsi_14d < 30
+                    ? 'text-[#22c55e]'
+                    : 'text-[#525252]'
+              }`}>
+                {data.rsi_14d > 70 ? 'OVERBOUGHT' : data.rsi_14d < 30 ? 'OVERSOLD' : 'NEUTRAL'}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Volatility Grid */}
