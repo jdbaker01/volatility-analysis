@@ -9,6 +9,11 @@ vi.mock('../auth/AuthContext', () => ({
   useAuth: vi.fn(),
 }))
 
+// Mock PortfolioPage to avoid nested fetch calls
+vi.mock('../components/PortfolioPage', () => ({
+  default: () => <div data-testid="portfolio-page">Portfolio Page</div>,
+}))
+
 import { useAuth } from '../auth/AuthContext'
 
 // Mock import.meta.env
@@ -420,5 +425,60 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.queryByText('450.25')).not.toBeInTheDocument()
     })
+  })
+
+  // Tab Navigation Tests
+  it('renders ANALYSIS and PORTFOLIOS tabs', () => {
+    render(<App />)
+    expect(screen.getByRole('tab', { name: 'ANALYSIS' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'PORTFOLIOS' })).toBeInTheDocument()
+  })
+
+  it('renders tablist', () => {
+    render(<App />)
+    expect(screen.getByRole('tablist')).toBeInTheDocument()
+  })
+
+  it('has analysis tab active by default', () => {
+    render(<App />)
+    expect(screen.getByRole('tab', { name: 'ANALYSIS' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'PORTFOLIOS' })).toHaveAttribute('aria-selected', 'false')
+  })
+
+  it('shows ticker input on analysis tab by default', () => {
+    render(<App />)
+    expect(screen.getByPlaceholderText('SYMBOL')).toBeInTheDocument()
+  })
+
+  it('switches to portfolios tab and shows PortfolioPage', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('tab', { name: 'PORTFOLIOS' }))
+    expect(screen.getByTestId('portfolio-page')).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('SYMBOL')).not.toBeInTheDocument()
+    expect(screen.queryByText('RECENT')).not.toBeInTheDocument()
+  })
+
+  it('switches back to analysis tab from portfolios tab', () => {
+    render(<App />)
+    // Go to portfolios
+    fireEvent.click(screen.getByRole('tab', { name: 'PORTFOLIOS' }))
+    expect(screen.getByTestId('portfolio-page')).toBeInTheDocument()
+
+    // Go back to analysis
+    fireEvent.click(screen.getByRole('tab', { name: 'ANALYSIS' }))
+    expect(screen.getByPlaceholderText('SYMBOL')).toBeInTheDocument()
+    expect(screen.queryByTestId('portfolio-page')).not.toBeInTheDocument()
+  })
+
+  it('hides footer when on portfolios tab', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('tab', { name: 'PORTFOLIOS' }))
+    expect(screen.queryByText('DATA: YAHOO FINANCE')).not.toBeInTheDocument()
+  })
+
+  it('hides ticker input on portfolios tab', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('tab', { name: 'PORTFOLIOS' }))
+    expect(screen.queryByPlaceholderText('SYMBOL')).not.toBeInTheDocument()
   })
 })

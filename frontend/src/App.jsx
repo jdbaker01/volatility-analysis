@@ -4,6 +4,8 @@ import TickerInput from './components/TickerInput'
 import VolatilityTable from './components/VolatilityTable'
 import VolatilityChart from './components/VolatilityChart'
 import SignInPage from './components/SignInPage'
+import TabNavigation from './components/TabNavigation'
+import PortfolioPage from './components/PortfolioPage'
 
 const API_BASE = import.meta.env.VITE_API_BASE || ''
 const HISTORY_KEY = 'volatility_history'
@@ -11,6 +13,7 @@ const MAX_HISTORY = 10
 
 export default function App() {
   const { user, loading: authLoading, signOut } = useAuth()
+  const [activeTab, setActiveTab] = useState('analysis')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -90,7 +93,13 @@ export default function App() {
               INVESTMENT ANALYSIS
             </h1>
             <div className="h-4 w-px bg-[#3d5a7f]" />
-            <TickerInput onSubmit={fetchVolatility} loading={loading} />
+            <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+            {activeTab === 'analysis' && (
+              <>
+                <div className="h-4 w-px bg-[#3d5a7f]" />
+                <TickerInput onSubmit={fetchVolatility} loading={loading} />
+              </>
+            )}
           </div>
           <div className="flex items-center gap-3">
             {user.picture && (
@@ -112,101 +121,107 @@ export default function App() {
         </div>
       </header>
 
-      <div className="flex flex-1">
-        {/* History Sidebar */}
-        <aside className="w-48 bg-[#0d0d0d] border-r border-[#1f1f1f] flex flex-col">
-          <div className="px-4 py-3 border-b border-[#1f1f1f] flex items-center justify-between">
-            <span className="text-[10px] text-[#525252] tracking-wider">RECENT</span>
-            {history.length > 0 && (
-              <button
-                onClick={clearHistory}
-                className="text-[10px] text-[#404040] hover:text-[#737373] tracking-wider"
-              >
-                CLEAR
-              </button>
-            )}
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {history.length === 0 ? (
-              <div className="px-4 py-8 text-center">
-                <p className="text-[11px] text-[#404040]">No history yet</p>
-              </div>
-            ) : (
-              <div className="py-1">
-                {history.map((ticker, index) => (
+      {activeTab === 'analysis' ? (
+        <>
+          <div className="flex flex-1">
+            {/* History Sidebar */}
+            <aside className="w-48 bg-[#0d0d0d] border-r border-[#1f1f1f] flex flex-col">
+              <div className="px-4 py-3 border-b border-[#1f1f1f] flex items-center justify-between">
+                <span className="text-[10px] text-[#525252] tracking-wider">RECENT</span>
+                {history.length > 0 && (
                   <button
-                    key={ticker}
-                    onClick={() => fetchVolatility(ticker)}
-                    className={`w-full px-4 py-2.5 text-left text-[13px] font-medium tracking-wide transition-colors ${
-                      data?.ticker === ticker
-                        ? 'bg-[#1a1a1a] text-white border-l-2 border-[#3b82f6]'
-                        : 'text-[#737373] hover:bg-[#111] hover:text-[#a3a3a3]'
-                    }`}
+                    onClick={clearHistory}
+                    className="text-[10px] text-[#404040] hover:text-[#737373] tracking-wider"
                   >
-                    <span className="text-[10px] text-[#404040] mr-2">{index + 1}</span>
-                    {ticker}
+                    CLEAR
                   </button>
-                ))}
+                )}
               </div>
-            )}
+              <div className="flex-1 overflow-y-auto">
+                {history.length === 0 ? (
+                  <div className="px-4 py-8 text-center">
+                    <p className="text-[11px] text-[#404040]">No history yet</p>
+                  </div>
+                ) : (
+                  <div className="py-1">
+                    {history.map((ticker, index) => (
+                      <button
+                        key={ticker}
+                        onClick={() => fetchVolatility(ticker)}
+                        className={`w-full px-4 py-2.5 text-left text-[13px] font-medium tracking-wide transition-colors ${
+                          data?.ticker === ticker
+                            ? 'bg-[#1a1a1a] text-white border-l-2 border-[#3b82f6]'
+                            : 'text-[#737373] hover:bg-[#111] hover:text-[#a3a3a3]'
+                        }`}
+                      >
+                        <span className="text-[10px] text-[#404040] mr-2">{index + 1}</span>
+                        {ticker}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="px-4 py-3 border-t border-[#1f1f1f]">
+                <p className="text-[9px] text-[#333] tracking-wider">MAX {MAX_HISTORY} ITEMS</p>
+              </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className="flex-1 overflow-y-auto">
+              <div className="max-w-5xl mx-auto px-8 py-6">
+                {/* Error State */}
+                {error && (
+                  <div className="mb-6 px-4 py-3 bg-[#1c1917] border-l-2 border-[#dc2626] text-[13px] text-[#fca5a5]">
+                    {error}
+                  </div>
+                )}
+
+                {/* Data Display */}
+                {data && (
+                  <div className="space-y-6">
+                    <VolatilityTable data={data} />
+                    <VolatilityChart data={data} />
+                  </div>
+                )}
+
+                {/* Empty State */}
+                {!data && !error && !loading && (
+                  <div className="flex flex-col items-center justify-center py-24">
+                    <p className="text-[13px] text-[#525252] mb-6 tracking-wide">
+                      ENTER SYMBOL TO ANALYZE
+                    </p>
+                    <div className="flex gap-2">
+                      {['SPY', 'QQQ', 'IWM', 'DIA', 'VIX'].map((symbol) => (
+                        <button
+                          key={symbol}
+                          onClick={() => fetchVolatility(symbol)}
+                          className="px-4 py-2 text-xs font-medium text-[#a3a3a3] bg-[#111] border border-[#262626] hover:border-[#404040] hover:text-white transition-all tracking-wider"
+                        >
+                          {symbol}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </main>
           </div>
-          <div className="px-4 py-3 border-t border-[#1f1f1f]">
-            <p className="text-[9px] text-[#333] tracking-wider">MAX {MAX_HISTORY} ITEMS</p>
-          </div>
-        </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-5xl mx-auto px-8 py-6">
-            {/* Error State */}
-            {error && (
-              <div className="mb-6 px-4 py-3 bg-[#1c1917] border-l-2 border-[#dc2626] text-[13px] text-[#fca5a5]">
-                {error}
-              </div>
-            )}
-
-            {/* Data Display */}
-            {data && (
-              <div className="space-y-6">
-                <VolatilityTable data={data} />
-                <VolatilityChart data={data} />
-              </div>
-            )}
-
-            {/* Empty State */}
-            {!data && !error && !loading && (
-              <div className="flex flex-col items-center justify-center py-24">
-                <p className="text-[13px] text-[#525252] mb-6 tracking-wide">
-                  ENTER SYMBOL TO ANALYZE
-                </p>
-                <div className="flex gap-2">
-                  {['SPY', 'QQQ', 'IWM', 'DIA', 'VIX'].map((symbol) => (
-                    <button
-                      key={symbol}
-                      onClick={() => fetchVolatility(symbol)}
-                      className="px-4 py-2 text-xs font-medium text-[#a3a3a3] bg-[#111] border border-[#262626] hover:border-[#404040] hover:text-white transition-all tracking-wider"
-                    >
-                      {symbol}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </main>
-      </div>
-
-      {/* Footer */}
-      <footer className="border-t border-[#1f1f1f]">
-        <div className="px-6 py-3 flex justify-between">
-          <p className="text-[11px] text-[#404040] tracking-wide">
-            DATA: YAHOO FINANCE
-          </p>
-          <p className="text-[11px] text-[#404040] tracking-wide">
-            VOL = ANNUALIZED STDEV OF DAILY RETURNS
-          </p>
-        </div>
-      </footer>
+          {/* Footer */}
+          <footer className="border-t border-[#1f1f1f]">
+            <div className="px-6 py-3 flex justify-between">
+              <p className="text-[11px] text-[#404040] tracking-wide">
+                DATA: YAHOO FINANCE
+              </p>
+              <p className="text-[11px] text-[#404040] tracking-wide">
+                VOL = ANNUALIZED STDEV OF DAILY RETURNS
+              </p>
+            </div>
+          </footer>
+        </>
+      ) : (
+        <PortfolioPage />
+      )}
     </div>
   )
 }

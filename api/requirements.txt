@@ -6,3 +6,5 @@ numpy==1.26.3
 google-auth==2.27.0
 python-dotenv>=1.0.0
 requests
+asyncpg==0.29.0
+scipy>=1.12.0

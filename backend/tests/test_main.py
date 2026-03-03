@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 import httpx
 
 import sys
@@ -239,3 +239,276 @@ class TestAppConfiguration:
     def test_app_title(self):
         """Test that app has correct title."""
         assert app.title == "Volatility Analysis API"
+
+
+# --- Portfolio endpoint tests ---
+
+mock_portfolio = {
+    "id": "test-uuid",
+    "user_email": "test@example.com",
+    "name": "Test Portfolio",
+    "parent_id": None,
+    "portfolio_type": "leaf",
+    "holdings": [],
+    "created_at": "2024-01-01T00:00:00+00:00",
+    "updated_at": "2024-01-01T00:00:00+00:00",
+}
+
+
+class TestListPortfolios:
+    """Test GET /api/portfolios."""
+
+    @pytest.mark.asyncio
+    @patch('main.get_portfolios')
+    async def test_returns_portfolios(self, mock_get, client):
+        mock_get.return_value = [mock_portfolio]
+        response = await client.get("/api/portfolios")
+        assert response.status_code == 200
+        data = response.json()
+        assert "portfolios" in data
+        assert len(data["portfolios"]) == 1
+
+    @pytest.mark.asyncio
+    @patch('main.get_portfolios')
+    async def test_returns_empty_list(self, mock_get, client):
+        mock_get.return_value = []
+        response = await client.get("/api/portfolios")
+        assert response.status_code == 200
+        assert response.json()["portfolios"] == []
+
+
+class TestCreatePortfolio:
+    """Test POST /api/portfolios."""
+
+    @pytest.mark.asyncio
+    @patch('main.create_portfolio')
+    async def test_creates_portfolio(self, mock_create, client):
+        mock_create.return_value = mock_portfolio
+        response = await client.post("/api/portfolios", json={
+            "name": "Test", "portfolio_type": "leaf"
+        })
+        assert response.status_code == 201
+        assert response.json()["name"] == "Test Portfolio"
+
+    @pytest.mark.asyncio
+    @patch('main.create_portfolio')
+    async def test_creates_with_parent(self, mock_create, client):
+        mock_create.return_value = mock_portfolio
+        response = await client.post("/api/portfolios", json={
+            "name": "Child", "portfolio_type": "leaf", "parent_id": "parent-uuid"
+        })
+        assert response.status_code == 201
+
+    @pytest.mark.asyncio
+    @patch('main.create_portfolio')
+    async def test_returns_400_on_value_error(self, mock_create, client):
+        mock_create.side_effect = ValueError("Parent not found")
+        response = await client.post("/api/portfolios", json={
+            "name": "Bad", "portfolio_type": "leaf", "parent_id": "bad"
+        })
+        assert response.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_returns_422_for_invalid_type(self, client):
+        response = await client.post("/api/portfolios", json={
+            "name": "Bad", "portfolio_type": "invalid"
+        })
+        assert response.status_code == 422
+
+
+class TestGetPortfolioEndpoint:
+    """Test GET /api/portfolios/{id}."""
+
+    @pytest.mark.asyncio
+    @patch('main.get_portfolio')
+    async def test_returns_portfolio(self, mock_get, client):
+        mock_get.return_value = mock_portfolio
+        response = await client.get("/api/portfolios/test-uuid")
+        assert response.status_code == 200
+        assert response.json()["id"] == "test-uuid"
+
+    @pytest.mark.asyncio
+    @patch('main.get_portfolio')
+    async def test_returns_404_not_found(self, mock_get, client):
+        mock_get.return_value = None
+        response = await client.get("/api/portfolios/bad-uuid")
+        assert response.status_code == 404
+
+
+class TestUpdatePortfolioEndpoint:
+    """Test PUT /api/portfolios/{id}."""
+
+    @pytest.mark.asyncio
+    @patch('main.update_portfolio')
+    async def test_updates_portfolio(self, mock_update, client):
+        mock_update.return_value = mock_portfolio
+        response = await client.put("/api/portfolios/test-uuid", json={
+            "name": "Updated"
+        })
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    @patch('main.update_portfolio')
+    async def test_returns_404_not_found(self, mock_update, client):
+        mock_update.return_value = None
+        response = await client.put("/api/portfolios/bad-uuid", json={
+            "name": "X"
+        })
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    @patch('main.update_portfolio')
+    async def test_returns_400_on_value_error(self, mock_update, client):
+        mock_update.side_effect = ValueError("has children")
+        response = await client.put("/api/portfolios/test-uuid", json={
+            "portfolio_type": "leaf"
+        })
+        assert response.status_code == 400
+
+
+class TestDeletePortfolioEndpoint:
+    """Test DELETE /api/portfolios/{id}."""
+
+    @pytest.mark.asyncio
+    @patch('main.delete_portfolio')
+    async def test_deletes_portfolio(self, mock_delete, client):
+        mock_delete.return_value = True
+        response = await client.delete("/api/portfolios/test-uuid")
+        assert response.status_code == 200
+        assert response.json()["status"] == "deleted"
+
+    @pytest.mark.asyncio
+    @patch('main.delete_portfolio')
+    async def test_returns_404_not_found(self, mock_delete, client):
+        mock_delete.return_value = False
+        response = await client.delete("/api/portfolios/bad-uuid")
+        assert response.status_code == 404
+
+
+class TestSetHoldingsEndpoint:
+    """Test PUT /api/portfolios/{id}/holdings."""
+
+    @pytest.mark.asyncio
+    @patch('main.set_holdings')
+    async def test_sets_holdings(self, mock_set, client):
+        mock_set.return_value = mock_portfolio
+        response = await client.put("/api/portfolios/test-uuid/holdings", json={
+            "holdings": [{"ticker": "AAPL", "shares": 100}]
+        })
+        assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    @patch('main.set_holdings')
+    async def test_returns_400_on_value_error(self, mock_set, client):
+        mock_set.side_effect = ValueError("not a leaf")
+        response = await client.put("/api/portfolios/test-uuid/holdings", json={
+            "holdings": [{"ticker": "AAPL", "shares": 100}]
+        })
+        assert response.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_returns_422_for_invalid_shares(self, client):
+        response = await client.put("/api/portfolios/test-uuid/holdings", json={
+            "holdings": [{"ticker": "AAPL", "shares": -10}]
+        })
+        assert response.status_code == 422
+
+
+class TestGetPortfolioAnalytics:
+    """Test GET /api/portfolios/{id}/analytics."""
+
+    @pytest.mark.asyncio
+    @patch('main.calculate_portfolio_analytics')
+    @patch('main.get_all_leaf_holdings')
+    @patch('main.get_portfolio')
+    async def test_returns_analytics(self, mock_get_p, mock_get_h, mock_calc, client):
+        mock_get_p.return_value = mock_portfolio
+        mock_get_h.return_value = [{"ticker": "AAPL", "shares": 100}]
+        mock_calc.return_value = {
+            "current_value": 15000.0,
+            "daily_pnl": 100.0,
+            "weekly_pnl": 250.0,
+            "monthly_pnl": -500.0,
+            "holdings_detail": [],
+            "var": {
+                "historical": {"var_95": 500.0, "var_95_pct": 3.33, "method": "historical"},
+                "parametric": {"var_95": 480.0, "var_95_pct": 3.20, "method": "parametric"},
+            },
+        }
+        response = await client.get("/api/portfolios/test-uuid/analytics")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["current_value"] == 15000.0
+        assert "var" in data
+
+    @pytest.mark.asyncio
+    @patch('main.get_portfolio')
+    async def test_returns_404_not_found(self, mock_get_p, client):
+        mock_get_p.return_value = None
+        response = await client.get("/api/portfolios/bad-uuid/analytics")
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    @patch('main.get_all_leaf_holdings')
+    @patch('main.get_portfolio')
+    async def test_returns_empty_for_no_holdings(self, mock_get_p, mock_get_h, client):
+        mock_get_p.return_value = mock_portfolio
+        mock_get_h.return_value = []
+        response = await client.get("/api/portfolios/test-uuid/analytics")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["current_value"] == 0
+
+    @pytest.mark.asyncio
+    @patch('main.calculate_portfolio_analytics')
+    @patch('main.get_all_leaf_holdings')
+    @patch('main.get_portfolio')
+    async def test_returns_404_on_value_error(self, mock_get_p, mock_get_h, mock_calc, client):
+        mock_get_p.return_value = mock_portfolio
+        mock_get_h.return_value = [{"ticker": "BAD", "shares": 10}]
+        mock_calc.side_effect = ValueError("No price data")
+        response = await client.get("/api/portfolios/test-uuid/analytics")
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    @patch('main.calculate_portfolio_analytics')
+    @patch('main.get_all_leaf_holdings')
+    @patch('main.get_portfolio')
+    async def test_returns_500_on_exception(self, mock_get_p, mock_get_h, mock_calc, client):
+        mock_get_p.return_value = mock_portfolio
+        mock_get_h.return_value = [{"ticker": "AAPL", "shares": 10}]
+        mock_calc.side_effect = Exception("Unexpected")
+        response = await client.get("/api/portfolios/test-uuid/analytics")
+        assert response.status_code == 500
+
+
+class TestPortfolioAuthProtection:
+    """Test that portfolio endpoints require auth."""
+
+    @pytest.mark.asyncio
+    async def test_portfolios_list_requires_auth(self):
+        app.dependency_overrides.pop(verify_google_token, None)
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app),
+                base_url="http://test"
+            ) as client:
+                response = await client.get("/api/portfolios")
+                assert response.status_code == 403
+        finally:
+            app.dependency_overrides[verify_google_token] = mock_verify_token
+
+    @pytest.mark.asyncio
+    async def test_portfolios_create_requires_auth(self):
+        app.dependency_overrides.pop(verify_google_token, None)
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app),
+                base_url="http://test"
+            ) as client:
+                response = await client.post("/api/portfolios", json={
+                    "name": "Test", "portfolio_type": "leaf"
+                })
+                assert response.status_code == 403
+        finally:
+            app.dependency_overrides[verify_google_token] = mock_verify_token
