@@ -6,6 +6,15 @@ import sys
 sys.path.insert(0, '..')
 
 from main import app
+from auth import verify_google_token
+
+
+# Mock auth dependency for most tests
+async def mock_verify_token():
+    return {"email": "test@example.com", "name": "Test User"}
+
+
+app.dependency_overrides[verify_google_token] = mock_verify_token
 
 
 # Use httpx AsyncClient for testing
@@ -175,6 +184,38 @@ class TestGetVolatility:
 
         assert response.status_code == 200
         mock_calc.assert_called_once_with('aapl', 5)
+
+
+class TestAuthProtection:
+    """Test that endpoints are properly protected."""
+
+    @pytest.mark.asyncio
+    async def test_volatility_returns_403_without_token(self):
+        """Test that volatility endpoint requires auth."""
+        app.dependency_overrides.pop(verify_google_token, None)
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app),
+                base_url="http://test"
+            ) as client:
+                response = await client.get("/api/volatility/SPY")
+                assert response.status_code == 403
+        finally:
+            app.dependency_overrides[verify_google_token] = mock_verify_token
+
+    @pytest.mark.asyncio
+    async def test_health_check_no_auth_required(self):
+        """Test that health check works without auth."""
+        app.dependency_overrides.pop(verify_google_token, None)
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app),
+                base_url="http://test"
+            ) as client:
+                response = await client.get("/api/health")
+                assert response.status_code == 200
+        finally:
+            app.dependency_overrides[verify_google_token] = mock_verify_token
 
 
 class TestCORS:

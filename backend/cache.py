@@ -1,10 +1,14 @@
+import os
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 import pandas as pd
 import requests
 
-DB_PATH = Path(__file__).parent / "price_cache.db"
+if os.environ.get("VERCEL"):
+    DB_PATH = Path("/tmp/price_cache.db")
+else:
+    DB_PATH = Path(__file__).parent / "price_cache.db"
 
 
 def get_connection():

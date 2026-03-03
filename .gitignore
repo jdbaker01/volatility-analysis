@@ -49,3 +49,4 @@ price_cache.db
 
 # Logs
 *.log
+.vercel

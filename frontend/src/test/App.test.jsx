@@ -3,15 +3,44 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import App from '../App'
 import { mockVolatilityData } from './mockData'
 
+// Mock useAuth
+const mockSignOut = vi.fn()
+vi.mock('../auth/AuthContext', () => ({
+  useAuth: vi.fn(),
+}))
+
+import { useAuth } from '../auth/AuthContext'
+
+// Mock import.meta.env
+vi.stubEnv('VITE_API_BASE', '')
+vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-client-id')
+
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.getItem.mockReturnValue(null)
     global.fetch = vi.fn()
+    useAuth.mockReturnValue({
+      user: { name: 'Test User', email: 'test@example.com', token: 'mock-token', picture: null },
+      loading: false,
+      signOut: mockSignOut,
+    })
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('renders sign-in page when user is null', () => {
+    useAuth.mockReturnValue({ user: null, loading: false, signOut: mockSignOut })
+    render(<App />)
+    expect(screen.getByText('SIGN IN TO CONTINUE')).toBeInTheDocument()
+  })
+
+  it('renders nothing while auth is loading', () => {
+    useAuth.mockReturnValue({ user: null, loading: true, signOut: mockSignOut })
+    const { container } = render(<App />)
+    expect(container.innerHTML).toBe('')
   })
 
   it('renders header with title', () => {
@@ -19,9 +48,32 @@ describe('App', () => {
     expect(screen.getByText('INVESTMENT ANALYSIS')).toBeInTheDocument()
   })
 
-  it('renders HISTORICAL ANALYSIS text', () => {
+  it('renders user email in header', () => {
     render(<App />)
-    expect(screen.getByText('HISTORICAL ANALYSIS')).toBeInTheDocument()
+    expect(screen.getByText('test@example.com')).toBeInTheDocument()
+  })
+
+  it('renders sign out button', () => {
+    render(<App />)
+    expect(screen.getByText('SIGN OUT')).toBeInTheDocument()
+  })
+
+  it('calls signOut when SIGN OUT is clicked', () => {
+    render(<App />)
+    fireEvent.click(screen.getByText('SIGN OUT'))
+    expect(mockSignOut).toHaveBeenCalled()
+  })
+
+  it('renders user picture when available', () => {
+    useAuth.mockReturnValue({
+      user: { name: 'Test', email: 'test@example.com', token: 'tok', picture: 'https://example.com/pic.jpg' },
+      loading: false,
+      signOut: mockSignOut,
+    })
+    render(<App />)
+    const img = screen.getByAltText('Test')
+    expect(img).toBeInTheDocument()
+    expect(img).toHaveAttribute('src', 'https://example.com/pic.jpg')
   })
 
   it('renders ticker input', () => {
@@ -59,9 +111,10 @@ describe('App', () => {
     expect(screen.getByText('VOL = ANNUALIZED STDEV OF DAILY RETURNS')).toBeInTheDocument()
   })
 
-  it('fetches data when quick symbol is clicked', async () => {
+  it('fetches data with auth header when quick symbol is clicked', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
+      status: 200,
       json: () => Promise.resolve(mockVolatilityData),
     })
 
@@ -71,13 +124,21 @@ describe('App', () => {
     fireEvent.click(spyButton)
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/volatility/SPY')
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/volatility/SPY',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Authorization': 'Bearer mock-token',
+          }),
+        })
+      )
     })
   })
 
   it('displays data after successful fetch', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
+      status: 200,
       json: () => Promise.resolve(mockVolatilityData),
     })
 
@@ -94,6 +155,7 @@ describe('App', () => {
   it('displays error message on fetch failure', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: false,
+      status: 500,
       json: () => Promise.resolve({ detail: 'Ticker not found' }),
     })
 
@@ -111,6 +173,7 @@ describe('App', () => {
   it('displays generic error message when detail is missing', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: false,
+      status: 500,
       json: () => Promise.resolve({}),
     })
 
@@ -139,9 +202,45 @@ describe('App', () => {
     })
   })
 
+  it('signs out on 401 response', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+    })
+
+    render(<App />)
+
+    const input = screen.getByPlaceholderText('SYMBOL')
+    fireEvent.change(input, { target: { value: 'SPY' } })
+    fireEvent.submit(input.closest('form'))
+
+    await waitFor(() => {
+      expect(mockSignOut).toHaveBeenCalled()
+    })
+  })
+
+  it('shows access denied and signs out on 403 response', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+    })
+
+    render(<App />)
+
+    const input = screen.getByPlaceholderText('SYMBOL')
+    fireEvent.change(input, { target: { value: 'SPY' } })
+    fireEvent.submit(input.closest('form'))
+
+    await waitFor(() => {
+      expect(screen.getByText('Access denied — your account is not authorized')).toBeInTheDocument()
+      expect(mockSignOut).toHaveBeenCalled()
+    })
+  })
+
   it('adds ticker to history after successful fetch', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
+      status: 200,
       json: () => Promise.resolve(mockVolatilityData),
     })
 
@@ -187,10 +286,11 @@ describe('App', () => {
     expect(screen.getByText('No history yet')).toBeInTheDocument()
   })
 
-  it('fetches data when history item is clicked', async () => {
+  it('fetches data with auth header when history item is clicked', async () => {
     localStorage.getItem.mockReturnValue(JSON.stringify(['AAPL']))
     global.fetch.mockResolvedValueOnce({
       ok: true,
+      status: 200,
       json: () => Promise.resolve({ ...mockVolatilityData, ticker: 'AAPL' }),
     })
 
@@ -199,7 +299,14 @@ describe('App', () => {
     fireEvent.click(screen.getByText('AAPL'))
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8000/api/volatility/AAPL')
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/volatility/AAPL',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Authorization': 'Bearer mock-token',
+          }),
+        })
+      )
     })
   })
 
@@ -207,6 +314,7 @@ describe('App', () => {
     localStorage.getItem.mockReturnValue(JSON.stringify(['AAPL', 'MSFT']))
     global.fetch.mockResolvedValueOnce({
       ok: true,
+      status: 200,
       json: () => Promise.resolve({ ...mockVolatilityData, ticker: 'MSFT' }),
     })
 
@@ -227,6 +335,7 @@ describe('App', () => {
     localStorage.getItem.mockReturnValue(JSON.stringify(longHistory))
     global.fetch.mockResolvedValueOnce({
       ok: true,
+      status: 200,
       json: () => Promise.resolve({ ...mockVolatilityData, ticker: 'NEW' }),
     })
 
@@ -248,6 +357,7 @@ describe('App', () => {
     localStorage.getItem.mockReturnValue(JSON.stringify(['AAPL', 'MSFT']))
     global.fetch.mockResolvedValueOnce({
       ok: true,
+      status: 200,
       json: () => Promise.resolve({ ...mockVolatilityData, ticker: 'AAPL' }),
     })
 
@@ -283,6 +393,7 @@ describe('App', () => {
     // First, load data successfully
     global.fetch.mockResolvedValueOnce({
       ok: true,
+      status: 200,
       json: () => Promise.resolve(mockVolatilityData),
     })
 
@@ -299,6 +410,7 @@ describe('App', () => {
     // Then trigger an error
     global.fetch.mockResolvedValueOnce({
       ok: false,
+      status: 500,
       json: () => Promise.resolve({ detail: 'Error' }),
     })
 

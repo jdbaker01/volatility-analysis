@@ -20,3 +20,15 @@ const localStorageMock = {
   clear: vi.fn(),
 }
 global.localStorage = localStorageMock
+
+// Mock Google Identity Services
+global.google = {
+  accounts: {
+    id: {
+      initialize: vi.fn(),
+      renderButton: vi.fn(),
+      disableAutoSelect: vi.fn(),
+      prompt: vi.fn(),
+    },
+  },
+}

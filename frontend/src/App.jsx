@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from './auth/AuthContext'
 import TickerInput from './components/TickerInput'
 import VolatilityTable from './components/VolatilityTable'
 import VolatilityChart from './components/VolatilityChart'
+import SignInPage from './components/SignInPage'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = import.meta.env.VITE_API_BASE || ''
 const HISTORY_KEY = 'volatility_history'
 const MAX_HISTORY = 10
 
 export default function App() {
+  const { user, loading: authLoading, signOut } = useAuth()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -36,7 +39,22 @@ export default function App() {
     setError(null)
 
     try {
-      const response = await fetch(`${API_BASE}/api/volatility/${ticker}`)
+      const response = await fetch(`${API_BASE}/api/volatility/${ticker}`, {
+        headers: {
+          'Authorization': `Bearer ${user.token}`,
+        },
+      })
+
+      if (response.status === 401) {
+        signOut()
+        return
+      }
+
+      if (response.status === 403) {
+        setError('Access denied — your account is not authorized')
+        signOut()
+        return
+      }
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -59,6 +77,9 @@ export default function App() {
     localStorage.removeItem(HISTORY_KEY)
   }
 
+  if (authLoading) return null
+  if (!user) return <SignInPage googleClientId={import.meta.env.VITE_GOOGLE_CLIENT_ID} />
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
       {/* Header */}
@@ -71,8 +92,22 @@ export default function App() {
             <div className="h-4 w-px bg-[#3d5a7f]" />
             <TickerInput onSubmit={fetchVolatility} loading={loading} />
           </div>
-          <div className="text-xs text-[#7da3c9] tracking-wide">
-            HISTORICAL ANALYSIS
+          <div className="flex items-center gap-3">
+            {user.picture && (
+              <img
+                src={user.picture}
+                alt={user.name}
+                className="w-6 h-6 rounded-full"
+                referrerPolicy="no-referrer"
+              />
+            )}
+            <span className="text-xs text-[#7da3c9]">{user.email}</span>
+            <button
+              onClick={signOut}
+              className="text-xs text-[#4a7ab0] hover:text-white tracking-wider"
+            >
+              SIGN OUT
+            </button>
           </div>
         </div>
       </header>
