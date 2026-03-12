@@ -15,6 +15,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [history, setHistory] = useState([])
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Load history from localStorage on mount
   useEffect(() => {
@@ -37,6 +38,7 @@ export default function App() {
   const fetchVolatility = async (ticker) => {
     setLoading(true)
     setError(null)
+    setSidebarOpen(false)
 
     try {
       const response = await fetch(`${API_BASE}/api/volatility/${ticker}`, {
@@ -84,15 +86,25 @@ export default function App() {
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
       {/* Header */}
       <header className="bg-[#1e3a5f] border-b border-[#2d4a6f]">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h1 className="text-[15px] font-semibold tracking-tight text-white">
+        <div className="px-4 md:px-6 py-3 md:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 md:gap-6 min-w-0">
+            {/* Mobile sidebar toggle */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="md:hidden text-white p-1 -ml-1"
+              aria-label="Toggle sidebar"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h1 className="text-[13px] md:text-[15px] font-semibold tracking-tight text-white whitespace-nowrap">
               INVESTMENT ANALYSIS
             </h1>
-            <div className="h-4 w-px bg-[#3d5a7f]" />
+            <div className="hidden md:block h-4 w-px bg-[#3d5a7f]" />
             <TickerInput onSubmit={fetchVolatility} loading={loading} />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
             {user.picture && (
               <img
                 src={user.picture}
@@ -101,7 +113,7 @@ export default function App() {
                 referrerPolicy="no-referrer"
               />
             )}
-            <span className="text-xs text-[#7da3c9]">{user.email}</span>
+            <span className="hidden md:inline text-xs text-[#7da3c9]">{user.email}</span>
             <button
               onClick={signOut}
               className="text-xs text-[#4a7ab0] hover:text-white tracking-wider"
@@ -112,9 +124,23 @@ export default function App() {
         </div>
       </header>
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 relative">
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div
+            className="md:hidden fixed inset-0 bg-black/50 z-20"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* History Sidebar */}
-        <aside className="w-48 bg-[#0d0d0d] border-r border-[#1f1f1f] flex flex-col">
+        <aside className={`
+          fixed md:relative z-30 md:z-auto
+          top-0 md:top-auto left-0 h-full md:h-auto
+          w-48 bg-[#0d0d0d] border-r border-[#1f1f1f] flex flex-col
+          transform transition-transform duration-200 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
+        `}>
           <div className="px-4 py-3 border-b border-[#1f1f1f] flex items-center justify-between">
             <span className="text-[10px] text-[#525252] tracking-wider">RECENT</span>
             {history.length > 0 && (
@@ -157,17 +183,17 @@ export default function App() {
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-5xl mx-auto px-8 py-6">
+          <div className="max-w-5xl mx-auto px-4 md:px-8 py-4 md:py-6">
             {/* Error State */}
             {error && (
-              <div className="mb-6 px-4 py-3 bg-[#1c1917] border-l-2 border-[#dc2626] text-[13px] text-[#fca5a5]">
+              <div className="mb-4 md:mb-6 px-4 py-3 bg-[#1c1917] border-l-2 border-[#dc2626] text-[13px] text-[#fca5a5]">
                 {error}
               </div>
             )}
 
             {/* Data Display */}
             {data && (
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 <VolatilityTable data={data} />
                 <VolatilityChart data={data} />
               </div>
@@ -175,11 +201,11 @@ export default function App() {
 
             {/* Empty State */}
             {!data && !error && !loading && (
-              <div className="flex flex-col items-center justify-center py-24">
+              <div className="flex flex-col items-center justify-center py-16 md:py-24">
                 <p className="text-[13px] text-[#525252] mb-6 tracking-wide">
                   ENTER SYMBOL TO ANALYZE
                 </p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap justify-center gap-2">
                   {['SPY', 'QQQ', 'IWM', 'DIA', 'VIX'].map((symbol) => (
                     <button
                       key={symbol}
@@ -198,7 +224,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="border-t border-[#1f1f1f]">
-        <div className="px-6 py-3 flex justify-between">
+        <div className="px-4 md:px-6 py-3 flex flex-col md:flex-row md:justify-between gap-1">
           <p className="text-[11px] text-[#404040] tracking-wide">
             DATA: YAHOO FINANCE
           </p>
