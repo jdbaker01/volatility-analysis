@@ -50,9 +50,9 @@ export default function VolatilityChart({ data }) {
 
   return (
     <div className="bg-[#111] border border-[#1f1f1f]">
-      <div className="px-6 py-4 border-b border-[#1f1f1f] flex items-center justify-between">
+      <div className="px-4 md:px-6 py-3 md:py-4 border-b border-[#1f1f1f] flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div className="text-[11px] text-[#525252] tracking-wider">VOLATILITY HISTORY</div>
-        <div className="flex items-center gap-6 text-[11px]">
+        <div className="flex items-center flex-wrap gap-3 md:gap-6 text-[11px]">
           <div className="flex items-center gap-2">
             <div className="w-3 h-[2px] bg-white" />
             <span className="text-[#737373]">30D</span>
@@ -61,7 +61,7 @@ export default function VolatilityChart({ data }) {
             <div className="w-3 h-[2px] bg-[#525252]" />
             <span className="text-[#737373]">90D</span>
           </div>
-          <div className="w-px h-3 bg-[#262626]" />
+          <div className="hidden md:block w-px h-3 bg-[#262626]" />
           <div className="flex items-center gap-2">
             <div className="w-3 h-[1px] bg-[#525252] border-t border-dashed border-[#525252]" />
             <span className="text-[#525252]">p50 / p90 / p99</span>
@@ -69,9 +69,9 @@ export default function VolatilityChart({ data }) {
         </div>
       </div>
 
-      <div className="p-4">
-        <ResponsiveContainer width="100%" height={320}>
-          <LineChart data={chartData} margin={{ top: 16, right: 48, left: 8, bottom: 8 }}>
+      <div className="p-2 md:p-4">
+        <ResponsiveContainer width="100%" height={280}>
+          <LineChart data={chartData} margin={{ top: 16, right: 32, left: 0, bottom: 8 }}>
             <CartesianGrid stroke="#1f1f1f" strokeDasharray="none" vertical={false} />
             <XAxis
               dataKey="date"
