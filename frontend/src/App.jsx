@@ -86,25 +86,26 @@ export default function App() {
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
       {/* Header */}
       <header className="bg-[#1e3a5f] border-b border-[#2d4a6f]">
-        <div className="px-4 md:px-6 py-3 md:py-4 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3 md:gap-6 min-w-0">
-            {/* Mobile sidebar toggle */}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden text-white p-1 -ml-1"
-              aria-label="Toggle sidebar"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <h1 className="text-[13px] md:text-[15px] font-semibold tracking-tight text-white whitespace-nowrap">
-              INVESTMENT ANALYSIS
-            </h1>
-            <div className="hidden md:block h-4 w-px bg-[#3d5a7f]" />
+        <div className="px-4 md:px-6 py-3 md:py-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+          {/* Mobile sidebar toggle */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="md:hidden text-white p-1"
+            aria-label="Toggle sidebar"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <h1 className="text-[13px] md:text-[15px] font-semibold tracking-tight text-white whitespace-nowrap">
+            INVESTMENT ANALYSIS
+          </h1>
+          <div className="hidden md:block h-4 w-px bg-[#3d5a7f]" />
+          {/* On mobile: full-width row below; on desktop: inline after title */}
+          <div className="order-last w-full md:order-none md:w-auto">
             <TickerInput onSubmit={fetchVolatility} loading={loading} />
           </div>
-          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          <div className="flex items-center gap-2 md:gap-3 ml-auto">
             {user.picture && (
               <img
                 src={user.picture}
