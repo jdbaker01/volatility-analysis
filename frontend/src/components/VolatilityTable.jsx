@@ -22,20 +22,20 @@ export default function VolatilityTable({ data }) {
   return (
     <div className="bg-[#111] border border-[#1f1f1f]">
       {/* Quote Header */}
-      <div className="px-6 py-4 border-b border-[#1f1f1f]">
-        <div className="flex items-start justify-between">
+      <div className="px-4 md:px-6 py-4 border-b border-[#1f1f1f]">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
           <div>
             <div className="flex items-baseline gap-3">
-              <span className="text-2xl font-semibold text-white tracking-tight">{data.ticker}</span>
-              <span className="text-[28px] font-light text-white tabular-nums">{formatPrice(data.current_price)}</span>
+              <span className="text-xl md:text-2xl font-semibold text-white tracking-tight">{data.ticker}</span>
+              <span className="text-2xl md:text-[28px] font-light text-white tabular-nums">{formatPrice(data.current_price)}</span>
             </div>
           </div>
 
           {/* Range Data */}
-          <div className="text-right space-y-2">
+          <div className="text-left md:text-right space-y-2">
             <div>
               <div className="text-[10px] text-[#525252] tracking-wider mb-1">DAILY RANGE</div>
-              <div className="flex items-center justify-end gap-4 text-[12px] tabular-nums">
+              <div className="flex items-center md:justify-end gap-3 md:gap-4 text-[12px] tabular-nums">
                 <div>
                   <span className="text-[#525252]">O </span>
                   <span className="text-[#a3a3a3]">{formatPrice(data.daily_open)}</span>
@@ -52,7 +52,7 @@ export default function VolatilityTable({ data }) {
             </div>
             <div>
               <div className="text-[10px] text-[#525252] tracking-wider mb-1">MONTHLY RANGE</div>
-              <div className="flex items-center justify-end gap-4 text-[12px] tabular-nums">
+              <div className="flex items-center md:justify-end gap-3 md:gap-4 text-[12px] tabular-nums">
                 <div>
                   <span className="text-[#525252]">H </span>
                   <span className="text-[#22c55e]">{formatPrice(data.monthly_high)}</span>
@@ -65,7 +65,7 @@ export default function VolatilityTable({ data }) {
             </div>
             <div>
               <div className="text-[10px] text-[#525252] tracking-wider mb-1">YEARLY RANGE</div>
-              <div className="flex items-center justify-end gap-4 text-[12px] tabular-nums">
+              <div className="flex items-center md:justify-end gap-3 md:gap-4 text-[12px] tabular-nums">
                 <div>
                   <span className="text-[#525252]">H </span>
                   <span className="text-[#22c55e]">{formatPrice(data.yearly_high)}</span>
@@ -100,13 +100,13 @@ export default function VolatilityTable({ data }) {
       </div>
 
       {/* Returns */}
-      <div className="grid grid-cols-4 divide-x divide-[#1f1f1f] border-b border-[#1f1f1f]">
+      <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-[#1f1f1f] border-b border-[#1f1f1f]">
         {[
           { key: 'daily', label: 'DAILY' },
           { key: 'week', label: '1 WEEK' },
           { key: 'month', label: '1 MONTH' },
           { key: 'ytd', label: 'YTD' },
-        ].map(({ key, label }) => {
+        ].map(({ key, label }, i) => {
           const value = data.returns?.[key]
           const formatted = value === null || value === undefined
             ? '—'
@@ -119,9 +119,9 @@ export default function VolatilityTable({ data }) {
                 ? 'text-[#ef4444]'
                 : 'text-[#a3a3a3]'
           return (
-            <div key={key} className="px-6 py-4 text-center">
-              <div className="text-[10px] text-[#525252] tracking-wider mb-2">{label}</div>
-              <div className={`text-lg font-light tabular-nums ${color}`}>
+            <div key={key} className={`px-4 md:px-6 py-3 md:py-4 text-center ${i >= 2 ? 'border-t md:border-t-0 border-[#1f1f1f]' : ''}`}>
+              <div className="text-[10px] text-[#525252] tracking-wider mb-1 md:mb-2">{label}</div>
+              <div className={`text-base md:text-lg font-light tabular-nums ${color}`}>
                 {formatted}
               </div>
             </div>
@@ -130,7 +130,7 @@ export default function VolatilityTable({ data }) {
       </div>
 
       {/* RSI */}
-      <div className="px-6 py-4 border-b border-[#1f1f1f]">
+      <div className="px-4 md:px-6 py-4 border-b border-[#1f1f1f]">
         <div className="flex items-center justify-between">
           <div className="text-[11px] text-[#525252] tracking-wider">14-DAY RSI</div>
           <div className="flex items-center gap-3">
@@ -161,11 +161,11 @@ export default function VolatilityTable({ data }) {
       </div>
 
       {/* Volatility Grid */}
-      <div className="grid grid-cols-2 divide-x divide-[#1f1f1f]">
+      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[#1f1f1f]">
         {/* 30-Day */}
-        <div className="p-6">
-          <div className="text-[11px] text-[#525252] tracking-wider mb-4">30-DAY VOLATILITY</div>
-          <div className="text-3xl font-light text-white tabular-nums mb-2">
+        <div className="px-4 md:p-6 py-4">
+          <div className="text-[11px] text-[#525252] tracking-wider mb-3 md:mb-4">30-DAY VOLATILITY</div>
+          <div className="text-2xl md:text-3xl font-light text-white tabular-nums mb-1 md:mb-2">
             {formatPercent(data.vol_30d)}
           </div>
           <div className={`text-sm ${getPercentileColor(data.vol_30d_percentile)}`}>
@@ -174,9 +174,9 @@ export default function VolatilityTable({ data }) {
         </div>
 
         {/* 90-Day */}
-        <div className="p-6">
-          <div className="text-[11px] text-[#525252] tracking-wider mb-4">90-DAY VOLATILITY</div>
-          <div className="text-3xl font-light text-white tabular-nums mb-2">
+        <div className="px-4 md:p-6 py-4">
+          <div className="text-[11px] text-[#525252] tracking-wider mb-3 md:mb-4">90-DAY VOLATILITY</div>
+          <div className="text-2xl md:text-3xl font-light text-white tabular-nums mb-1 md:mb-2">
             {formatPercent(data.vol_90d)}
           </div>
           <div className={`text-sm ${getPercentileColor(data.vol_90d_percentile)}`}>
@@ -186,9 +186,9 @@ export default function VolatilityTable({ data }) {
       </div>
 
       {/* Historical Thresholds */}
-      <div className="px-6 py-4 bg-[#0a0a0a] border-t border-[#1f1f1f]">
+      <div className="px-4 md:px-6 py-4 bg-[#0a0a0a] border-t border-[#1f1f1f]">
         <div className="text-[11px] text-[#525252] tracking-wider mb-3">HISTORICAL THRESHOLDS</div>
-        <div className="grid grid-cols-2 gap-8">
+        <div className="grid grid-cols-2 gap-4 md:gap-8">
           <div className="space-y-2">
             <div className="flex justify-between text-[12px]">
               <span className="text-[#525252]">30D p50</span>
