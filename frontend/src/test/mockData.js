@@ -95,3 +95,54 @@ export const mockNullRsiData = {
   ...mockVolatilityData,
   rsi_14d: null,
 }
+
+// Portfolio mock data
+export const mockPortfolios = [
+  { id: 'p1', name: 'Tech Stocks', portfolio_type: 'leaf', parent_id: null, holdings: [{ ticker: 'AAPL', shares: 100 }, { ticker: 'MSFT', shares: 50 }] },
+  { id: 'p2', name: 'My Groups', portfolio_type: 'group', parent_id: null },
+  { id: 'p3', name: 'Sub Portfolio', portfolio_type: 'leaf', parent_id: 'p2', holdings: [{ ticker: 'GOOG', shares: 25 }] },
+]
+
+export const mockPortfolioAnalytics = {
+  current_value: 125000.50,
+  daily_pnl: 1250.75,
+  weekly_pnl: -3200.00,
+  monthly_pnl: 5400.25,
+  var: {
+    historical: { var_95: 4500.00, var_95_pct: 3.60 },
+    parametric: { var_95: 4200.50, var_95_pct: 3.36 },
+  },
+  holdings_detail: [
+    { ticker: 'AAPL', shares: 100, current_price: 175.50, market_value: 17550.00 },
+    { ticker: 'MSFT', shares: 50, current_price: 380.25, market_value: 19012.50 },
+  ],
+}
+
+export const mockPortfolioAnalyticsNullPnl = {
+  current_value: 0,
+  daily_pnl: null,
+  weekly_pnl: null,
+  monthly_pnl: null,
+  var: {
+    historical: { var_95: null, var_95_pct: null },
+    parametric: { var_95: null, var_95_pct: null },
+  },
+  holdings_detail: [],
+}
+
+export const mockPortfolioAnalyticsZeroPnl = {
+  current_value: 10000,
+  daily_pnl: 0,
+  weekly_pnl: 0,
+  monthly_pnl: 0,
+  var: {},
+  holdings_detail: null,
+}
+
+export const mockPortfolioAnalyticsNoVar = {
+  current_value: 50000,
+  daily_pnl: 100,
+  weekly_pnl: -200,
+  monthly_pnl: 500,
+  var: null,
+}
