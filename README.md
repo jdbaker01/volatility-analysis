@@ -39,6 +39,19 @@ npm run dev
 
 Open http://localhost:5173 in your browser.
 
+## Database Setup
+
+The portfolios feature requires a PostgreSQL database. Volatility analysis endpoints work without one.
+
+1. Create a free project at [Neon](https://neon.tech) and copy the connection string.
+2. Copy `backend/.env.example` to `backend/.env` and fill in `DATABASE_URL`:
+   ```
+   DATABASE_URL=postgresql://user:password@ep-xxx.<region>.aws.neon.tech/neondb?sslmode=require
+   ```
+3. Start the backend — the `portfolios` table and indexes are created automatically on first run via a startup hook in `backend/main.py`.
+
+For deployment, set `DATABASE_URL` in your platform's environment variables (e.g. Vercel project settings) for both Preview and Production. Without it, the backend boots but every `/api/portfolios*` call returns a 500.
+
 ## API
 
 | Endpoint | Description |
