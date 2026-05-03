@@ -1,0 +1,13 @@
+aws_region = "us-east-1"
+
+# Globally unique. S3 bucket names are in a flat global namespace, so
+# pick something specific. Lowercase, no underscores.
+s3_bucket_name = "volatility-pdf-imports-CHANGEME"
+
+# Browser-origin allow-list for direct uploads via pre-signed URL. Add
+# every Vercel domain you'll upload from (preview branches included).
+frontend_origins = [
+  "http://localhost:5173",
+  "https://volatilty-analysis.vercel.app",
+  # "https://volatilty-analysis-git-<branch>-<team>.vercel.app",
+]
