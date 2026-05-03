@@ -1,0 +1,19 @@
+# Local state
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Local provider cache + lock dependency directory
+.terraform/
+.terraform.lock.hcl
+
+# Real values — only commit terraform.tfvars.example
+terraform.tfvars
+*.auto.tfvars
+
+# Plan output
+*.tfplan
+
+# Crash logs
+crash.log
+crash.*.log
